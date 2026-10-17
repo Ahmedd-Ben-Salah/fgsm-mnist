@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import matplotlib.pyplot as plt
 
 from attack import input_gradient, fgsm
@@ -57,4 +58,28 @@ ax[2].set_title("difference")
 for a in ax:
   a.axis("off")
 plt.savefig("figures/clean_vs_adversarial.png",dpi=150,bbox_inches="tight")
+plt.close()
+
+#multiple images now
+images=x_test[:1000]
+labels=y_test[:1000]
+images = np.expand_dims(x_test[:1000], axis=-1)
+def accuracy_under_attack(model,images,labels,epsilon):
+  adv=fgsm(model,images,labels,epsilon)
+  preds=tf.argmax(model(adv),axis=1)
+  return tf.reduce_mean(tf.cast(preds==labels,tf.float32))
+
+epsilons = [0.0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+accuracies=[]
+for eps in epsilons:
+  acc=accuracy_under_attack(model,images,labels,eps)
+  accuracies.append(acc)
+  print(eps,np.round(acc,4))
+plt.figure(figsize=(6,4))
+plt.plot(epsilons,accuracies,marker="o")
+plt.xlabel("epsilon")
+plt.ylabel("accuracy")
+plt.title("MNIST classifier under FGSM attack")
+plt.grid(True,alpha=0.3)
+plt.savefig("figures/accuracy_vs_epsilon.png",dpi=150,bbox_inches="tight")
 plt.close()
